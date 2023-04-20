@@ -21,7 +21,7 @@ class CanopyCategorySelectCommand(sublime_plugin.TextCommand):
       self.view.show(self.view.sel())
 
   def find_enclosing_topic(self, index_of_subtopic_definition, fileText):
-    topic_definition = re.compile('^\\*?\\*? ?(\\S[^\n]+(?=\\?|\\:)\\??):?(?:\n|\\s)')
+    topic_definition = re.compile('^\\*?\\*? ?(\\S[^\n]+(?=\\?|\\:)\\??):?(?=>\\s+|$)')
     return min(
       (topic_match for topic_match in topic_definition.finditer(fileText) if (index_of_subtopic_definition - topic_match.start()) >= 0),
       key=lambda m: (index_of_subtopic_definition - m.start())
