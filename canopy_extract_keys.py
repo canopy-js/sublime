@@ -57,7 +57,7 @@ class CanopyExtractKeysCommand(sublime_plugin.TextCommand):
 
     keys = [addColon(link_target) for link_target in link_targets]
 
-    text = '\n\n'.join(keys) + '\n'
+    text = '\n\n'.join(keys)
 
     sublime.set_clipboard(text)
     if (len(keys) > 0):

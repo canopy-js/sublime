@@ -17,8 +17,15 @@ class CanopyJumpToDefinitionCommand(sublime_plugin.TextCommand):
     if (current_reference_match or current_subtopic_match): # We are hovering over a link
       target_string = self.render(current_reference_match.groups()[0] if current_reference_match else current_subtopic_match.groups()[1])
 
-      matching_definitions = [subtopic_match for subtopic_match in re.finditer(self.subtopic_definition, fileText) if (subtopic_match.groups()[1] == target_string)]
+      matching_definitions = [
+        subtopic_match for subtopic_match in
+        re.finditer(self.subtopic_definition, fileText)
+        if (subtopic_match.groups()[1] + (subtopic_match.groups()[2] or '') == target_string)
+      ]
 
+      if (len(matching_definitions) == 0):
+        matching_definitions = [subtopic_match for subtopic_match in re.finditer(self.subtopic_definition, fileText) if (subtopic_match.groups()[1] == self.remove_markdown(target_string))]
+        print(matching_definitions, target_string)
       if (len(matching_definitions) == 0):
         sublime.status_message('No matching definitions!')
       elif (len(matching_definitions) == 1):
@@ -95,6 +102,9 @@ class CanopyJumpToDefinitionCommand(sublime_plugin.TextCommand):
   def on_done(self, index):
     if (index > -1):
       self.goto(self.matching_definitions[index]['enclosing_subtopic_start'])
+
+  def remove_markdown(self, string):
+    return string.replace('*', '').replace('_', '').replace('~', '').replace('`', '')
 
   def render(self, linkContents):
       target_string = '';
