@@ -1,12 +1,14 @@
 import sublime
 import sublime_plugin
 import re
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
 class CanopyCycleReferencesCommand(sublime_plugin.TextCommand):
   topic_definition = re.compile('(?:\\A|\n\n)(^\\*\\*? ?)(?!-)((?:[^:.!?\n]|(?<=\\\\)[:.!?]|[:.!?](?!\\s))+)(?::|(\\?))(?=\\s+|$)', re.M)
   subtopic_definition = re.compile('(?:\\A|\n\n)(^\\*?\\*? ?)(?!-)((?:[^:.!?\n]|(?<=\\\\)[:.!?]|[:.!?](?!\\s))+)(?::|(\\?))(?=\\s+|$)', re.M)
   category_definition = re.compile('(?:\\A|\n\n)(^\\[)([^\\]]+)\\]$', re.M)
-  reference = re.compile(r'\[\[((?:(?!(?<!\\)\]\]).)+)\]\]', re.M)
+  reference = re.compile(r'\[\[((?:(?!(?<!\\)\]\]).)+)\]\]', re.S)
 
   def run(self, edit):
     current_selection = self.view.sel()[0]
@@ -17,12 +19,14 @@ class CanopyCycleReferencesCommand(sublime_plugin.TextCommand):
     if (current_reference_match or current_subtopic_match): # We are hovering over a link
       target_string = self.render(current_reference_match.groups()[0] if current_reference_match else current_subtopic_match.groups()[1])
 
+      print(target_string)
+
       next_match = next(
         (reference_match for reference_match in self.reference.finditer(fileText)
-          if self.render(reference_match.groups()[0]) == target_string and reference_match.start() > current_selection.begin()), None
+          if self.render(reference_match.groups()[0].replace('\n<', '').replace('\n>', '').replace('\n', ' ')) == target_string and reference_match.start() > current_selection.begin()), None
       ) or next(
         (reference_match for reference_match in self.reference.finditer(fileText)
-          if self.render(reference_match.groups()[0]) == target_string), None
+          if self.render(reference_match.groups()[0].replace('\n<', '').replace('\n>', '').replace('\n', ' ')) == target_string), None
       )
 
       if (not next_match):

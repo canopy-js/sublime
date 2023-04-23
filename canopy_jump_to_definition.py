@@ -1,12 +1,14 @@
 import sublime
 import sublime_plugin
 import re
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
 class CanopyJumpToDefinitionCommand(sublime_plugin.TextCommand):
   topic_definition = re.compile('(?:\\A|\n\n)(^\\*\\*? ?)(?!-)((?:[^:.!?\n]|(?<=\\\\)[:.!?]|[:.!?](?!\\s))+)(?::|(\\?))(?=\\s+|$)', re.M)
   subtopic_definition = re.compile('(?:\\A|\n\n)(^\\*?\\*? ?)(?!-)((?:[^:.!?\n]|(?<=\\\\)[:.!?]|[:.!?](?!\\s))+)(?::|(\\?))(?=\\s+|$)', re.M)
   category_definition = re.compile('(?:\\A|\n\n)(^\\[)([^\\]]+)\\]$', re.M)
-  reference = re.compile(r'\[\[((?:(?!(?<!\\)\]\]).)+)\]\]', re.M)
+  reference = re.compile(r'\[\[((?:(?!(?<!\\)\]\]).)+)\]\]', re.S)
 
   def run(self, edit):
     current_selection = self.view.sel()[0]
@@ -15,6 +17,7 @@ class CanopyJumpToDefinitionCommand(sublime_plugin.TextCommand):
     current_subtopic_match = next((match for match in self.subtopic_definition.finditer(fileText) if (match.start() - 1 < current_selection.begin() and match.end() > current_selection.end())), None)
 
     if (current_reference_match or current_subtopic_match): # We are hovering over a link
+      print(current_reference_match.groups()[0])
       target_string = self.render(current_reference_match.groups()[0] if current_reference_match else current_subtopic_match.groups()[1])
 
       matching_definitions = [
@@ -23,9 +26,13 @@ class CanopyJumpToDefinitionCommand(sublime_plugin.TextCommand):
         if (subtopic_match.groups()[1] + (subtopic_match.groups()[2] or '') == target_string)
       ]
 
+      pp.pprint(list(subtopic_match.groups()[1] for subtopic_match in re.finditer(self.subtopic_definition, fileText)))
+
       if (len(matching_definitions) == 0):
-        matching_definitions = [subtopic_match for subtopic_match in re.finditer(self.subtopic_definition, fileText) if (subtopic_match.groups()[1] == self.remove_markdown(target_string))]
-        print(matching_definitions, target_string)
+        matching_definitions = [subtopic_match
+          for subtopic_match
+          in re.finditer(self.subtopic_definition, fileText)
+          if (subtopic_match.groups()[1] == self.remove_markdown(target_string.replace('\n<', '').replace('\n>', '').replace('\n', ' ')))]
       if (len(matching_definitions) == 0):
         sublime.status_message('No matching definitions!')
       elif (len(matching_definitions) == 1):
@@ -111,7 +118,7 @@ class CanopyJumpToDefinitionCommand(sublime_plugin.TextCommand):
       exclusive_target_string = '';
       exclusive_display_syntax = False;
 
-      segments = re.findall(r'(((?<!\\)\{\{?)((?:(?!(?<!\\)\}).)+)((?<!\\)\}\}?)|((?:(?!(?<!\\)[{}]).)+))', linkContents);
+      segments = re.findall(r'(((?<!\\)\{\{?)((?:(?!(?<!\\)\}).)+)((?<!\\)\}\}?)|((?:(?!(?<!\\)[{}]).)+))', linkContents, re.S);
       for segment in segments:
         if (re.search(r'(?<!\\)\{', segment[0])): # if there are braces at all
           if (segment[4]): # plaintext segment

@@ -6,7 +6,7 @@ class CanopyPickReferencesCommand(sublime_plugin.TextCommand):
   topic_definition = re.compile('(?:\\A|\n\n)(^\\*\\*? ?)(?!-)((?:[^:.!?\n]|(?<=\\\\)[:.!?]|[:.!?](?!\\s))+)(?::|(\\?))(?=\\s+|$)', re.M)
   subtopic_definition = re.compile('(?:\\A|\n\n)(^\\*?\\*? ?)(?!-)((?:[^:.!?\n]|(?<=\\\\)[:.!?]|[:.!?](?!\\s))+)(?::|(\\?))(?=\\s+|$)', re.M)
   category_definition = re.compile('(?:\\A|\n\n)(^\\[)([^\\]]+)\\]$', re.M)
-  reference = re.compile(r'\[\[((?:(?!(?<!\\)\]\]).)+)\]\]', re.M)
+  reference = re.compile(r'\[\[((?:(?!(?<!\\)\]\]).)+)\]\]', re.S)
 
   def run(self, edit):
     current_selection = self.view.sel()[0]
@@ -32,7 +32,7 @@ class CanopyPickReferencesCommand(sublime_plugin.TextCommand):
       category_match = self.enclosing_category(reference_match.start(), fileText)
       return {
         'start': reference_match.start(),
-        'text': reference_match.groups()[0],
+        'text': reference_match.groups()[0].replace('\n<', '').replace('\n>', '').replace('\n', ' '),
         'enclosing_topic_name': topic_match.groups()[1],
         'enclosing_topic_start': topic_match.start(1),
         'enclosing_subtopic_name': subtopic_match.groups()[1],
