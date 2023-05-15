@@ -6,6 +6,7 @@
     { "keys": ["super+shift+b"], "command": "canopy_category_bottom" },
     { "keys": ["super+shift+g"], "command": "canopy_topic_bottom" },
     { "keys": ["super+shift+m"], "command": "canopy_topic_select" },
+    { "keys": ["super+shift+e"], "command": "canopy_jump_to_next_definition" },
     { "keys": ["super+shift+t"], "command": "canopy_jump_to_definition" },
     { "keys": ["super+shift+a"], "command": "canopy_autocomplete" },
     { "keys": ["super+shift+o"], "command": "canopy_pick_references" },
