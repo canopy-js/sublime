@@ -20,7 +20,7 @@ class CanopyJumpToDefinitionCommand(sublime_plugin.TextCommand):
       matching_definitions = [subtopic_match
         for subtopic_match
         in re.finditer(self.subtopic_definition, fileText)
-        if (subtopic_match.groups()[1] == self.remove_markdown(target_string.replace('\n<', '').replace('\n>', '').replace('\n', ' ')))]
+        if self.remove_markdown(subtopic_match.groups()[1]).upper() == self.remove_markdown(target_string).upper()]
 
       matching_definition = next((x for x in matching_definitions if x.start() > current_selection.begin()), None) or matching_definitions[0] # next or first definition
 
@@ -35,7 +35,7 @@ class CanopyJumpToDefinitionCommand(sublime_plugin.TextCommand):
     self.view.show(self.view.sel())
 
   def remove_markdown(self, string):
-    return string.replace('*', '').replace('_', '').replace('~', '').replace('`', '')
+    return string.replace('*', '').replace('_', '').replace('~', '').replace('`', '').replace('\n<', '').replace('\n>', '').replace('\n', ' ')
 
   def render(self, linkContents):
       target_string = '';

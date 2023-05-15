@@ -46,7 +46,7 @@ class CanopyPickReferencesCommand(sublime_plugin.TextCommand):
 
       self.matching_references = [reference_dict for reference_dict in
         (create_dict(reference_match) for reference_match in self.reference.finditer(fileText))
-        if reference_dict['enclosing_topic_start'] > reference_dict['enclosing_category_start'] and self.render(reference_dict['text']) == target_string
+        if reference_dict['enclosing_topic_start'] > reference_dict['enclosing_category_start'] and self.render(reference_dict['text']).upper() == target_string.upper()
       ]
 
       if (len(self.matching_references) == 0):
