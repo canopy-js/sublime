@@ -19,8 +19,6 @@ class CanopyCycleReferencesCommand(sublime_plugin.TextCommand):
     if (current_reference_match or current_subtopic_match): # We are hovering over a link
       target_string = self.render(current_reference_match.groups()[0] if current_reference_match else current_subtopic_match.groups()[1])
 
-      print(target_string)
-
       next_match = next(
         (reference_match for reference_match in self.reference.finditer(fileText)
           if self.render(reference_match.groups()[0].replace('\n<', '').replace('\n>', '').replace('\n', ' ')) == target_string and reference_match.start() > current_selection.begin()), None
