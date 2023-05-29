@@ -50,7 +50,6 @@ class CanopyTopicSelectCommand(sublime_plugin.TextCommand):
       self.view.show(self.view.sel())
 
   def display_string(self, topic):
-    return '[{}] {}'.format(
-      topic['enclosing_category_name'],
+    return '{}'.format(
       topic['name']
     )

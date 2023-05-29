@@ -2,11 +2,40 @@ import sublime
 import sublime_plugin
 import re
 
-class CanopyJumpToDefinitionCommand(sublime_plugin.TextCommand):
+class CanopyJumpToAllDefinitionCommand(sublime_plugin.TextCommand):
   topic_definition = re.compile('(?:\\A|\n\n)(^\\*\\*? ?)(?!-)((?:[^:.!?\n]|(?<=\\\\)[:.!?]|[:.!?](?!\\s))+)(?::|(\\?))(?=\\s+|$)', re.M)
   subtopic_definition = re.compile('(?:\\A|\n\n)(^\\*?\\*? ?)(?!-)((?:[^:.!?\n]|(?<=\\\\)[:.!?]|[:.!?](?!\\s))+)(?::|(\\?))(?=\\s+|$)', re.M)
   category_definition = re.compile('(?:\\A|\n\n)(^\\[)([^\\]]+)\\]$', re.M)
   reference = re.compile(r'\[\[((?:(?!(?<!\\)\]\]).)+)\]\]', re.S)
+
+  def create_dict(self, subtopic_match, fileText):
+    topic_match = self.enclosing_topic(subtopic_match.start(), fileText)
+    category_match = self.enclosing_category(subtopic_match.start(), fileText)
+    return {
+      'start': subtopic_match.start(1),
+      'name': subtopic_match.groups()[1],
+      'enclosing_topic_name': topic_match.groups()[1],
+      'enclosing_topic_start': topic_match.start(1),
+      'enclosing_category_name': category_match.groups()[1],
+      'enclosing_category_start': category_match.start(1)
+    }
+  def enclosing_topic(self, index_of_subtopic_definition, fileText):
+    if (not re.search(self.topic_definition, fileText)):
+      return None
+
+    return min(
+      (topic_match for topic_match in self.topic_definition.finditer(fileText) if (index_of_subtopic_definition - topic_match.start()) >= 0),
+      key=lambda m: (index_of_subtopic_definition - m.start())
+    )
+
+  def enclosing_category(self, index_of_subtopic_definition, fileText):
+    if (not re.search(self.category_definition, fileText)):
+      return None
+
+    return min(
+      (category_match for category_match in self.category_definition.finditer(fileText) if (index_of_subtopic_definition - category_match.start()) >= 0),
+      key=lambda m: (index_of_subtopic_definition - m.start())
+    )
 
   def run(self, edit):
     current_selection = self.view.sel()[0]
@@ -17,25 +46,40 @@ class CanopyJumpToDefinitionCommand(sublime_plugin.TextCommand):
     if (current_reference_match or current_subtopic_match): # We are hovering over a link
       target_string = self.render(current_reference_match.groups()[0] if current_reference_match else current_subtopic_match.groups()[1])
 
-      matching_definitions = [subtopic_match
+      self.matching_definitions = [self.create_dict(subtopic_match, fileText)
         for subtopic_match
         in re.finditer(self.subtopic_definition, fileText)
         if self.remove_markdown(subtopic_match.groups()[1]).upper() == self.remove_markdown(target_string).upper()]
 
-      matching_definition = next((x for x in matching_definitions if x.start() > current_selection.begin()), None) or matching_definitions[0] # next or first definition
+      sublime.active_window().show_quick_panel(
+        [self.display_string(def_dict) for def_dict in self.matching_definitions], self.on_done
+      )
 
-      self.goto(matching_definition.start(1))
     else:
       sublime.status_message('Cursor needs to be on reference!')
       return
 
-  def goto(self, position):
-    self.view.sel().clear()
-    self.view.sel().add(position)
-    self.view.show(self.view.sel())
+  def on_done(self, index):
+    if (index > -1):
+      self.view.sel().clear()
+      self.view.sel().add(self.matching_definitions[index]['start'])
+      self.view.show(self.view.sel())
 
   def remove_markdown(self, string):
-    return string.replace('*', '').replace('_', '').replace('~', '').replace('`', '').replace('\n<', '').replace('\n>', '').replace('\n', ' ')
+    return string.replace('*', '')\
+      .replace('_', '')\
+      .replace('~', '')\
+      .replace('`', '')\
+      .replace('\n<', '')\
+      .replace('\n>', '')\
+      .replace('(', '')\
+      .replace(')', '')\
+      .replace('\'', '')\
+      .replace('"', '')\
+      .replace('‘', '')\
+      .replace('’', '')\
+      .replace('“', '')\
+      .replace('”', '')
 
   def render(self, linkContents):
       target_string = '';
@@ -67,3 +111,10 @@ class CanopyJumpToDefinitionCommand(sublime_plugin.TextCommand):
       target_string = target_string[:1].upper() + target_string[1:]
       return target_string
 
+  def display_string(self, subtopic):
+    return '[{}] {}{}{}'.format(
+      subtopic['enclosing_category_name'],
+      subtopic['enclosing_topic_name'] if subtopic['enclosing_topic_name'] != subtopic['name'] else '',
+      ': ' if (subtopic['enclosing_topic_name'] != subtopic['name'] and (not subtopic['enclosing_topic_name'].endswith('?'))) else '',
+      subtopic['name']
+    )

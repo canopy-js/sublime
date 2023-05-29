@@ -1,6 +1,8 @@
 import sublime
 import sublime_plugin
 import re
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
 class CanopyQuickJumpCommand(sublime_plugin.TextCommand):
   topic_definition = re.compile('(?:\\A|\n\n)(^\\*\\*? ?)(?!-)((?:[^:.!?\n]|(?<=\\\\)[:.!?]|[:.!?](?!\\s))+)(?::|(\\?))(?=\\s+|$)', re.M)
