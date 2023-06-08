@@ -7,7 +7,7 @@ class SmartQuotesCommand(sublime_plugin.TextCommand):
       if (selection.empty()):
         selection = self.view.line(self.view.sel()[0])
       selection_text = self.view.substr(selection)
-      new_text = re.sub(r"(\s|^)\"([^\"]*)\"", r"\1“\2”", selection_text)
+      new_text = re.sub(r"([\s()[\]]|^)\"([^\"]*)\"", r"\1“\2”", selection_text)
       self.view.replace(edit, selection, new_text)
       print(new_text, 123)
 
