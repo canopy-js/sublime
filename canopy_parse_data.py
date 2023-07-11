@@ -309,4 +309,13 @@ def parse_file(self, sublime):
   canopy_parse_data['references_by_index'] = references_by_index
   canopy_parse_data['categories_by_index'] = categories_by_index
 
+  # for i in range(0, len(text)):
+  #   print(i,
+  #     (
+  #       (categories_by_index[i] or {}).get('name'),
+  #       (topics_by_index[i] or {}).get('name'),
+  #       (subtopics_by_index[i] or {}).get('name')
+  #     )
+  #   )
+
   return canopy_parse_data

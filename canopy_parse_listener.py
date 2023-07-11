@@ -10,13 +10,13 @@ from .canopy_parse_data import parse_file
 from .canopy_interface_manager import CanopyInterfaceManager
 
 canopy_parse_data = {}
-canopy_jump_list = []
-canopy_edit_list = []
+canopy_jump_lists = {}
+canopy_edit_lists = {}
 
 class CanopyParseData():
   global canopy_parse_data
-  global canopy_jump_list
-  global canopy_edit_list
+  global canopy_jump_lists
+  global canopy_edit_lists
 
   @classmethod
   def categories(self):
@@ -76,11 +76,11 @@ class CanopyParseData():
 
   @classmethod
   def jump_list(self):
-    return canopy_jump_list
+    return canopy_jump_lists[sublime.active_window().active_view().file_name()]
 
   @classmethod
   def edit_list(self):
-    return canopy_edit_list
+    return canopy_edit_lists[sublime.active_window().active_view().file_name()]
 
 
 class CanopyParseListener(sublime_plugin.ViewEventListener):
@@ -107,8 +107,10 @@ class CanopyParseListener(sublime_plugin.ViewEventListener):
     canopy_parse_data[self.view.file_name()] = parse_file(self, sublime)
 
   def register_edit(self):
-    global canopy_parse_data
-    canopy_parse_data[self.view.file_name()]['edit_list'] = canopy_edit_list
+    global canopy_edit_lists
+
+    if not canopy_edit_lists[self.view.file_name()]:
+      canopy_edit_lists[self.view.file_name()] = []
 
     category = self.parse_data()['categories_by_index'][CanopyInterfaceManager.get_cursor_position()]
     topic = self.parse_data()['topics_by_index'][CanopyInterfaceManager.get_cursor_position()]
@@ -126,22 +128,23 @@ class CanopyParseListener(sublime_plugin.ViewEventListener):
     return canopy_parse_data[self.view.file_name()]
 
   def register_cursor_move(self):
-    global canopy_parse_data
-    canopy_parse_data[self.view.file_name()]['jump_list'] = canopy_jump_list
+    global canopy_jump_lists
 
+    if not canopy_jump_lists.get(self.view.file_name()):
+      canopy_jump_lists[self.view.file_name()] = []
+
+    jump_list = canopy_jump_lists[self.view.file_name()]
     category = self.parse_data()['categories_by_index'][CanopyInterfaceManager.get_cursor_position()]
     topic = self.parse_data()['topics_by_index'][CanopyInterfaceManager.get_cursor_position()]
     subtopic = self.parse_data()['subtopics_by_index'][CanopyInterfaceManager.get_cursor_position()]
 
     item = (category and category['name'], topic and topic['name'], subtopic and subtopic['name'])
-    if item in canopy_jump_list:
-      index = canopy_jump_list.index(item)
-      canopy_jump_list.remove(item)
-      canopy_jump_list.insert(0, item)
+    if item in jump_list:
+      index = jump_list.index(item)
+      jump_list.remove(item)
+      jump_list.insert(0, item)
     else:
-      canopy_jump_list.insert(0, item)
-
-    print(canopy_jump_list)
+      jump_list.insert(0, item)
 
   def render(self, linkContents):
     linkContents = self.remove_markdown(linkContents)
