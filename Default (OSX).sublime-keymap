@@ -1,10 +1,12 @@
 [
     { "keys": ["super+shift+k"], "command": "canopy_extract_keys" },
     { "keys": ["super+shift+j"], "command": "canopy_quick_jump" },
+    { "keys": ["super+shift+alt+j"], "command": "canopy_pick_jump_list" },
     { "keys": ["super+shift+d"], "command": "canopy_cycle_references" },
     { "keys": ["super+shift+c"], "command": "canopy_category_select" },
     { "keys": ["super+shift+b"], "command": "canopy_category_bottom" },
     { "keys": ["super+shift+g"], "command": "canopy_topic_bottom" },
+    { "keys": ["super+option+g"], "command": "canopy_topic_top" },
     { "keys": ["super+shift+m"], "command": "canopy_topic_select" },
     { "keys": ["super+shift+t"], "command": "canopy_jump_to_local_definition" },
     { "keys": ["super+alt+t"], "command": "canopy_jump_to_global_definition" },
@@ -12,5 +14,6 @@
     { "keys": ["super+shift+a"], "command": "canopy_autocomplete" },
     { "keys": ["super+shift+o"], "command": "canopy_pick_references" },
     { "keys": ["super+shift+["], "command": "canopy_pick_all_references" },
-    { "keys": ["super+shift+'"], "command": "smart_quotes" }
+    { "keys": ["super+shift+'"], "command": "smart_quotes" },
+    { "keys": ["ctrl+shift+s"], "command": "show_panel", "args": { "panel": "replace", "in_selection": true } }
 ]

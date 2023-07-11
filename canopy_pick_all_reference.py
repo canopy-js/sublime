@@ -89,10 +89,27 @@ class CanopyPickAllReferencesCommand(sublime_plugin.TextCommand):
       matching_reference['text']
     )
 
+  def remove_markdown(self, string):
+    return string.replace('*', '')\
+      .replace('_', '')\
+      .replace('~', '')\
+      .replace('`', '')\
+      .replace('\n<', '')\
+      .replace('\n>', '')\
+      .replace('(', '')\
+      .replace(')', '')\
+      .replace('\'', '')\
+      .replace('"', '')\
+      .replace('‘', '')\
+      .replace('’', '')\
+      .replace('“', '')\
+      .replace('”', '')
+
   def render(self, linkContents):
       target_string = '';
       exclusive_target_string = '';
       exclusive_display_syntax = False;
+      linkContents = self.remove_markdown(linkContents)
 
       segments = re.findall(r'(((?<!\\)\{\{?)((?:(?!(?<!\\)\}).)+)((?<!\\)\}\}?)|((?:(?!(?<!\\)[{}]).)+))', linkContents);
       for segment in segments:

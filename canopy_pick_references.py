@@ -53,6 +53,12 @@ class CanopyPickReferencesCommand(sublime_plugin.TextCommand):
         sublime.status_message('No matching references!')
         return
 
+      if (len(self.matching_references) == 1):
+        self.view.sel().clear()
+        self.view.sel().add(self.matching_references[0]['start'])
+        self.view.show(self.view.sel())
+        return
+
       sublime.active_window().show_quick_panel(
         [self.display_string(matching_reference) for matching_reference in self.matching_references], self.on_done
       )

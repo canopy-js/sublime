@@ -5,7 +5,7 @@ import re
 class CanopyCategorySelectCommand(sublime_plugin.TextCommand):
   def run(self, edit):
     fileText = self.view.substr(sublime.Region(0, self.view.size()))
-    definition = re.compile('^\\[([^\\]]+)\\]', re.M)
+    definition = re.compile('^\\[([^^][^\\]]+)\\]', re.M)
     self.tuples = [[m.start(), m.groups()] for m in definition.finditer(fileText)]
     if (len(self.tuples) == 0):
       sublime.status_message('No Categories!')

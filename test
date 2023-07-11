@@ -1,0 +1,21 @@
+[A/B/C]
+* G:aaaaaaaaaaaaaaaa
+
+* A: XYZ. And.aaa
+
+B: XYZ.a
+
+* C: XYZ. And [[_here_]].
+
+D: XYZ.
+
+[A/B/C/D]
+
+* AA: XYZ. And [[_here_]].
+
+BB: XYZ.
+
+* CC: XYZ. And [[_here_]].
+
+DD: XYZ...
+

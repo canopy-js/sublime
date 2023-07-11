@@ -16,9 +16,10 @@ class CanopyExtractKeysCommand(sublime_plugin.TextCommand):
         selection = self.view.line(self.view.sel()[0])
 
     selectionText = self.view.substr(selection)
-    matches = re.findall(r'\[\[((?:(?!(?<!\\)\]\]).)+)\]\]', selectionText)
 
-    link_targets = [self.render(match) for match in matches]
+    matches = re.findall(self.reference, selectionText)
+
+    link_targets = [self.render(self.remove_markdown(match)) for match in matches]
 
     keys = [self.addColon(link_target) for link_target in link_targets]
 
@@ -36,6 +37,10 @@ class CanopyExtractKeysCommand(sublime_plugin.TextCommand):
       return string
     else:
         return string + ':';
+
+  def remove_markdown(self, string):
+    string = re.sub(r"\s*<br>\s*", " ", string)
+    return re.sub(r"(^|\n)[><] ", " ", string)
 
   def render(self, linkContents):
       target_string = '';
