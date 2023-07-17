@@ -6,7 +6,6 @@ import importlib
 
 class SmartQuotesCommand(sublime_plugin.TextCommand):
   def run(self, edit):
-    print(_Canopy_plugin_data)
     for selection in self.view.sel():
       if (selection.empty()):
         selection = self.view.line(self.view.sel()[0])

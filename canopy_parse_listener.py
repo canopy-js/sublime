@@ -4,103 +4,117 @@ import sublime
 import sublime_plugin
 import re
 import pprint
+
 pp = pprint.PrettyPrinter(indent=4)
 
-from .canopy_parse_data import parse_file
+from .canopy_data_parser import parse_file
 from .canopy_interface_manager import CanopyInterfaceManager
 
 canopy_parse_data = {}
 canopy_jump_lists = {}
 canopy_edit_lists = {}
 
-class CanopyParseData():
+class CanopyParseDataClass():
   global canopy_parse_data
   global canopy_jump_lists
   global canopy_edit_lists
 
-  @classmethod
+  @property
+  def canopy_bulk_file(self):
+    return bool(canopy_parse_data.get(sublime.active_window().active_view().file_name()))
+
+  @property
   def categories(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['categories']
 
-  @classmethod
+  @property
   def topics(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['topics']
 
-  @classmethod
+  @property
   def subtopics(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['subtopics']
 
-  @classmethod
+  @property
   def references(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['references']
 
-  @classmethod
+  @property
   def categories_by_name(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['categories_by_name']
 
-  @classmethod
+  @property
   def topics_by_name(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['topics_by_name']
 
-  @classmethod
+  @property
   def subtopics_by_name(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['subtopics_by_name']
 
-  @classmethod
+  @property
   def references_by_target(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['references_by_target']
 
-  @classmethod
+  @property
   def topics_by_index(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['topics_by_index']
 
-  @classmethod
+  @property
   def topic_definitions_by_index(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['topic_definitions_by_index']
 
-  @classmethod
+  @property
   def subtopics_by_index(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['subtopics_by_index']
 
-  @classmethod
+  @property
   def subtopic_definitions_by_index(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['subtopic_definitions_by_index']
 
-  @classmethod
+  @property
   def references_by_index(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['references_by_index']
 
-  @classmethod
+  @property
   def categories_by_index(self):
     return canopy_parse_data[sublime.active_window().active_view().file_name()]['categories_by_index']
 
-  @classmethod
+  @property
   def jump_list(self):
     return canopy_jump_lists[sublime.active_window().active_view().file_name()]
 
-  @classmethod
+  @property
   def edit_list(self):
     return canopy_edit_lists[sublime.active_window().active_view().file_name()]
 
+CanopyParseData = CanopyParseDataClass()
 
 class CanopyParseListener(sublime_plugin.ViewEventListener):
   pending = 0
 
-  def on_selection_modified_async(self):
-    if self.view.substr(sublime.Region(0, 1)) != '[':
-      return
-    self.register_cursor_move()
+  def in_bulk_file(self):
+    lines = self.view.substr(sublime.Region(0, self.view.size())).splitlines()
+    first_line = lines[0] if len(lines) > 0 else None
+    return first_line and first_line.startswith('[') and first_line.endswith(']')
 
   def on_activated(self):
+    if not self.in_bulk_file():
+      return
+    if not canopy_jump_lists.get(self.view.file_name()):
+      canopy_jump_lists[self.view.file_name()] = []
+
+    if not canopy_edit_lists.get(self.view.file_name()):
+      canopy_edit_lists[self.view.file_name()] = []
+
     self.initiate_file_parse()
 
   def on_modified_async(self):
-    if self.view.substr(sublime.Region(0, 1)) != '[':
+    if not self.in_bulk_file():
       return
     self.pending += 1
     sublime.set_timeout_async(self.initiate_file_parse, 500)
 
-    self.register_edit()
+    sublime.set_timeout_async(self.register_edit, 501) # must wait for file parse
 
   def initiate_file_parse(self):
     global canopy_parse_data
@@ -108,15 +122,18 @@ class CanopyParseListener(sublime_plugin.ViewEventListener):
 
   def register_edit(self):
     global canopy_edit_lists
+    canopy_edit_list = canopy_edit_lists[self.view.file_name()]
 
-    if not canopy_edit_lists[self.view.file_name()]:
-      canopy_edit_lists[self.view.file_name()] = []
+    category = self.parse_data['categories_by_index'][CanopyInterfaceManager.get_cursor_position()]
+    topic = self.parse_data['topics_by_index'][CanopyInterfaceManager.get_cursor_position()]
+    subtopic = self.parse_data['subtopics_by_index'][CanopyInterfaceManager.get_cursor_position()]
 
-    category = self.parse_data()['categories_by_index'][CanopyInterfaceManager.get_cursor_position()]
-    topic = self.parse_data()['topics_by_index'][CanopyInterfaceManager.get_cursor_position()]
-    subtopic = self.parse_data()['subtopics_by_index'][CanopyInterfaceManager.get_cursor_position()]
+    item = {
+      'category': category and category.get('name'),
+      'topic': topic and topic.get('name'),
+      'subtopic': subtopic and subtopic.get('name')
+    }
 
-    item = (category and category['name'], topic and topic['name'], subtopic and subtopic['name'])
     if item in canopy_edit_list:
       index = canopy_edit_list.index(item)
       canopy_edit_list.remove(item)
@@ -124,21 +141,36 @@ class CanopyParseListener(sublime_plugin.ViewEventListener):
     else:
       canopy_edit_list.insert(0, item)
 
+  @property
   def parse_data(self):
+    if not self.in_bulk_file():
+      return
+
     return canopy_parse_data[self.view.file_name()]
+
+  def on_selection_modified_async(self):
+    if not self.in_bulk_file():
+      return
+
+    sublime.set_timeout_async(self.register_cursor_move, 501) # must wait for on_modified_async to reparse file
 
   def register_cursor_move(self):
     global canopy_jump_lists
-
     if not canopy_jump_lists.get(self.view.file_name()):
       canopy_jump_lists[self.view.file_name()] = []
 
     jump_list = canopy_jump_lists[self.view.file_name()]
-    category = self.parse_data()['categories_by_index'][CanopyInterfaceManager.get_cursor_position()]
-    topic = self.parse_data()['topics_by_index'][CanopyInterfaceManager.get_cursor_position()]
-    subtopic = self.parse_data()['subtopics_by_index'][CanopyInterfaceManager.get_cursor_position()]
 
-    item = (category and category['name'], topic and topic['name'], subtopic and subtopic['name'])
+    category = self.parse_data['categories_by_index'][CanopyInterfaceManager.get_cursor_position()]
+    topic = self.parse_data['topics_by_index'][CanopyInterfaceManager.get_cursor_position()]
+    subtopic = self.parse_data['subtopics_by_index'][CanopyInterfaceManager.get_cursor_position()]
+
+    item = {
+      'category': category and category.get('name'),
+      'topic': topic and topic.get('name'),
+      'subtopic': subtopic and subtopic.get('name')
+    }
+
     if item in jump_list:
       index = jump_list.index(item)
       jump_list.remove(item)

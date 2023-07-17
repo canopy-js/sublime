@@ -1,55 +1,23 @@
 import sublime
 import sublime_plugin
-import re
+
+from .canopy_parse_listener import CanopyParseData
+from .canopy_interface_manager import CanopyInterfaceManager
 
 class CanopyTopicSelectCommand(sublime_plugin.TextCommand):
-  topic_definition = re.compile('(?:\\A|\n\n)(^\\*\\*? ?)(?!-)((?:[^:.!?\n]|(?<=\\\\)[:.!?]|[:.!?](?!\\s))+)(?::|(\\?))(?=\\s+|$)', re.M)
-  category_definition = re.compile('(?:\\A|\n\n)(^\\[)([^\\]]+)\\]$', re.M)
-
   def run(self, edit):
-    fileText = self.view.substr(sublime.Region(0, self.view.size()))
-
-    def create_dict(topic_match):
-      category_match = self.enclosing_category(topic_match.start(), fileText)
-      return {
-        'start': topic_match.start(1),
-        'name': topic_match.groups()[1],
-        'enclosing_category_name': category_match.groups()[1],
-        'enclosing_category_start': category_match.start(1)
-      }
-
-    self.topics = [ topic_dict for topic_dict in
-      (create_dict(topic_match) for topic_match in self.topic_definition.finditer(fileText))
-    ]
-
-    if (len(self.topics) == 0):
-      sublime.status_message('No Subtopics!')
-      return
-
-    if (len(re.findall(self.category_definition, fileText)) == 0):
-      sublime.status_message('No Categories!')
-      return
-
-    sublime.active_window().show_quick_panel(
-      [self.display_string(subtopic) for subtopic in self.topics], self.on_done
+    CanopyInterfaceManager.create_quick_panel(
+      self.generate_display_list(CanopyParseData.topics),
+      self.on_done,
+      (CanopyParseData.topics_by_index[
+        CanopyInterfaceManager.get_cursor_position()
+      ] or {}).get('index') or 0
     )
 
-  def enclosing_category(self, index_of_subtopic_definition, fileText):
-    if (not re.search(self.category_definition, fileText)):
-      return None
+  def on_done(self, selection_index):
+    if selection_index > -1:
+      selected_topic = CanopyParseData.topics[selection_index]
+      CanopyInterfaceManager.set_cursor_position(selected_topic['start'])
 
-    return min(
-      (category_match for category_match in self.category_definition.finditer(fileText) if (index_of_subtopic_definition - category_match.start()) >= 0),
-      key=lambda m: (index_of_subtopic_definition - m.start())
-    )
-
-  def on_done(self, index):
-    if (index > -1):
-      self.view.sel().clear()
-      self.view.sel().add(self.topics[index]['start'])
-      self.view.show(self.view.sel())
-
-  def display_string(self, topic):
-    return '{}'.format(
-      topic['name']
-    )
+  def generate_display_list(self, topics):
+    return [topic['name'] for topic in topics]

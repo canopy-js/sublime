@@ -1,8 +1,10 @@
 import pprint
+import time
+
 pp = pprint.PrettyPrinter(indent=4)
+from .canopy_transliterate import transliterate
 
 def parse_file(self, sublime):
-  print('parsing')
   canopy_parse_data = {}
   text = self.view.substr(sublime.Region(0, self.view.size()))
 
@@ -154,6 +156,9 @@ def parse_file(self, sublime):
         topics_by_index[i] = current_topic
         subtopics_by_index[i] = current_subtopic
         categories_by_index[i] = current_category
+        topics_by_index[i+1] = current_topic
+        subtopics_by_index[i+1] = current_subtopic
+        categories_by_index[i+1] = current_category
         i += 1
         state = 'in_reference'
 
@@ -238,6 +243,9 @@ def parse_file(self, sublime):
 
       else:
         buffer += text[i]
+        topics_by_index[i] = current_topic
+        subtopics_by_index[i] = current_subtopic
+        categories_by_index[i] = current_category
 
     elif state == 'in_note':
       if text[i] == '\n' and ((i < len(text) - 1 and text[i + 1] == '\n') or (text[i - 1] == '\n')):
@@ -247,7 +255,7 @@ def parse_file(self, sublime):
 
     elif state == 'in_reference':
       if text[i] == ']' and i < len(text) - 1 and text [i + 1] == ']':
-        current_reference['text'] = buffer
+        current_reference['text'] = '[[' + buffer + ']]'
         current_reference['target'] = self.render(buffer)
         current_reference['end'] = i + 2
         current_reference['subtopic'] = current_subtopic
@@ -286,6 +294,10 @@ def parse_file(self, sublime):
     i += 1
 
   current_category['end'] = i
+  if current_topic:
+    current_topic['end'] = i
+  if current_subtopic:
+    current_subtopic['end'] = i
   categories_by_index[i] = current_category
   topics_by_index[i] = current_topic
 
@@ -297,10 +309,40 @@ def parse_file(self, sublime):
   canopy_parse_data['subtopics'] = subtopics
   canopy_parse_data['references'] = references
 
+  for index, category in enumerate(canopy_parse_data['categories']):
+    category['name'] = transliterate(category['name'])
+    category['index'] = index
+
+  for index, topic in enumerate(canopy_parse_data['topics']):
+    topic['index'] = index
+    topic['key'] = topic['name'] + (' ' if topic['name'].endswith('?') else ': ')
+    topic['name'] = transliterate(topic['name'])
+
+  for index, subtopic in enumerate(canopy_parse_data['subtopics']):
+    subtopic['index'] = index
+    subtopic['key'] = subtopic['name'] + (' ' if subtopic['name'].endswith('?') else ': ')
+    subtopic['name'] = transliterate(subtopic['name'])
+
+  for index, reference in enumerate(canopy_parse_data['references']):
+    reference['key'] = reference['target'] + (' ' if reference['target'].endswith('?') else ': ')
+    reference['text'] = transliterate(reference['text'])
+    reference['target'] = transliterate(reference['target'])
+    reference['index'] = index
+
   canopy_parse_data['categories_by_name'] = categories_by_name
   canopy_parse_data['topics_by_name'] = topics_by_name
   canopy_parse_data['subtopics_by_name'] = subtopics_by_name
   canopy_parse_data['references_by_target'] = references_by_target
+
+  for subtopic in subtopics:
+    if subtopic['name'] != subtopic['topic']['name']:
+      subtopic['display'] = '({topic}) {subtopic}'.format(topic=subtopic['topic']['name'],
+        subtopic=subtopic['name']
+      )
+    else:
+      subtopic['display'] = '{topic}'.format(
+        topic=subtopic['topic']['name']
+      )
 
   canopy_parse_data['topics_by_index'] = [topic if topic and topic.get('name') else None for topic in topics_by_index]
   canopy_parse_data['topic_definitions_by_index'] = topic_definitions_by_index

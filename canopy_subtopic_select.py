@@ -1,10 +1,11 @@
 import sublime
 import sublime_plugin
+import re
 
 from .canopy_parse_listener import CanopyParseData
 from .canopy_interface_manager import CanopyInterfaceManager
 
-class CanopyAutocompleteCommand(sublime_plugin.TextCommand):
+class CanopySubtopicSelectCommand(sublime_plugin.TextCommand):
   def run(self, edit):
     CanopyInterfaceManager.create_quick_panel(
       self.generate_display_list(CanopyParseData.subtopics),
@@ -14,9 +15,7 @@ class CanopyAutocompleteCommand(sublime_plugin.TextCommand):
   def on_done(self, selection_index):
     if selection_index > -1:
       selected_topic = CanopyParseData.subtopics[selection_index]
-      CanopyInterfaceManager.insert(selected_topic['name'])
+      CanopyInterfaceManager.set_cursor_position(selected_topic['start'])
 
   def generate_display_list(self, subtopics):
-    return [
-      subtopic['display'] for subtopic in subtopics
-    ]
+    return [subtopic['display'] for subtopic in subtopics]
